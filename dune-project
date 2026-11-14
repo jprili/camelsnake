@@ -19,7 +19,7 @@
  (name camelsnake)
  (synopsis "A short synopsis")
  (description "A longer description")
- (depends ocaml dream)
+ (depends ocaml dream ppx_deriving_yojson)
  (tags
   ("add topics" "to describe" your project)))
 

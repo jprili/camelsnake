@@ -1,4 +1,6 @@
 (executable
  (public_name camelsnake)
  (name main)
- (libraries camelsnake dream))
+ (libraries camelsnake dream)
+ (preprocess (pps lwt_ppx ppx_deriving_yojson))
+)
