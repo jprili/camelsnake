@@ -120,7 +120,7 @@ let handle_move game_state =
 
   (*
   TODO: Step 3 - Prevent your Battlesnake from colliding with other Battlesnakes
-  opponents = game_state['board']['snakes']
+  let opponents = game_state.board.snakes in
 *)
 
   let safe_moves = 
