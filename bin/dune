@@ -2,5 +2,5 @@
  (public_name camelsnake)
  (name main)
  (libraries camelsnake dream)
- (preprocess (pps lwt_ppx ppx_deriving_yojson))
+ (preprocess (pps lwt_ppx ppx_yojson_conv))
 )
