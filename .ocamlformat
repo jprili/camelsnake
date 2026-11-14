@@ -1,0 +1,5 @@
+break-cases=fit-or-vertical
+break-infix=fit-or-vertical
+if-then-else=vertical
+type-decl=sparse
+comment-check=false
