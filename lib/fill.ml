@@ -1,4 +1,4 @@
-open Camelsnake.Types
+open Types
 
 module type FloodFill = sig
   val flood_fill : coord_t list -> coord_t -> int -> int -> int
