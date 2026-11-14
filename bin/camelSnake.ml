@@ -8,50 +8,54 @@ let list_of_moves (m : move_t) =
 (** - All snakes are hazards
     - Map bounds are hazards
     - Hazards are hazards *)
-let is_hazard direction { x; y } w h hazards =
+let get_hazards game_state =
+  let rec get_snake_coords (snakes : snake_t list) acc =
+    match snakes with
+    | snake :: rest -> get_snake_coords rest (acc @ snake.body)
+    | [] -> acc
+  in
+  let res = get_snake_coords game_state.board.snakes [] in
+  Dream.log "%s\n"
+    (res
+    |> List.map (fun x -> Yojson.Safe.to_string ([%yojson_of: coord_t] x))
+    |> List.fold_left ( ^ ) "");
+
+  res
+
+(** - All snakes are hazards
+    - Map bounds are hazards
+    - Hazards are hazards *)
+let is_hazard { x; y } w h hazards direction =
   match direction with
-  | Up when y + 1 = h -> false
-  | Down when y = 0 -> false
-  | Left when x = 0 -> false
-  | Right when x = w -> false
-  | _ -> true
+  | Up when y = h - 1 || List.mem { x; y = y + 1 } hazards -> true
+  | Down when y = 0 || List.mem { x; y = y - 1 } hazards -> true
+  | Left when x = 0 || List.mem { x = x - 1; y } hazards -> true
+  | Right when x = w - 1 || List.mem { x = x + 1; y } hazards -> true
+  | _ -> false
 
 (* region CALLBACK_HANDLERS *)
 let handle_move game_state =
   (* up, down, left, right*)
   let available_moves = { up = true; down = true; left = true; right = true } in
-  let curr_head, prev_head =
-    let default = { x = 0; y = 0 } in
-    match game_state.you.body with
-    | a :: b :: _ -> (a, b)
-    | a :: [] -> (a, a)
-    | _ -> (default, default)
-  in
-  (*
-  TODO: Step 1 - Prevent your Battlesnake from moving out of bounds
-  let board_width = game_state.board.width in
-  let board_height = game_state.board.height in
-  *)
-
-  (*
-let board_width = game_state.board.width in
-  let board_height = game_state.board.height in
-*)
-
+  let curr_head = game_state.you.head in
+  let hazards = get_hazards game_state in
+  let w = game_state.board.width in
+  let h = game_state.board.height in
+  let is_hazard_dir = is_hazard curr_head w h hazards in
   (* This means (0, 0) is bottom-left *)
-  if curr_head.y < prev_head.y then
-    available_moves.up <- false
-  else if curr_head.y > prev_head.y then
-    available_moves.down <- false
-  else if curr_head.x > prev_head.x then
-    available_moves.left <- false
-  else if curr_head.x < prev_head.x then
+  if is_hazard_dir Up then
+    available_moves.up <- false;
+  if is_hazard_dir Down then
+    available_moves.down <- false;
+  if is_hazard_dir Left then
+    available_moves.left <- false;
+  if is_hazard_dir Right then
     available_moves.right <- false;
 
-  (*
-  TODO: Step 2 - Prevent your Battlesnake from colliding with itself
-  let my_body = game_state.you.body in
-*)
+  Dream.log "up = %s " (Bool.to_string available_moves.up);
+  Dream.log "down = %s " (Bool.to_string available_moves.down);
+  Dream.log "left = %s " (Bool.to_string available_moves.left);
+  Dream.log "right = %s " (Bool.to_string available_moves.right);
 
   (*
   TODO: Step 3 - Prevent your Battlesnake from colliding with other Battlesnakes
@@ -65,7 +69,11 @@ let board_width = game_state.board.width in
   in
   let selected_move =
     let safe_as_array = Array.of_list safe_moves in
-    Array.get safe_as_array (safe_as_array |> Array.length |> Random.int)
+    (* if no moves left default to up *)
+    if Array.length safe_as_array = 0 then
+      "up"
+    else
+      Array.get safe_as_array (safe_as_array |> Array.length |> Random.int)
   in
   [%yojson_of: move_response_t] { move = selected_move }
   |> Yojson.Safe.to_string
@@ -103,7 +111,6 @@ let on_end _ =
 
 let on_move request =
   let%lwt body = Dream.body request in
-  Dream.log "%s" body;
   let game_state = body |> Yojson.Safe.from_string |> game_state_t_of_yojson in
   let result = handle_move game_state in
   Dream.json result
