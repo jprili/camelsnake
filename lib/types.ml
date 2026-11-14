@@ -71,6 +71,7 @@ type snake_t = {
   shout : string option; [@yojson.option]
   squad : string option; [@yojson.option]
   customizations : customizations_t option; [@yojson.option]
+  ownership : bool array array;
 }
 [@@deriving yojson]
 
