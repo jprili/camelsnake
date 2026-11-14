@@ -107,6 +107,22 @@ let handle_move game_state =
   else if curr_head.x < prev_head.x then
     available_moves.right <- false;
 
+  (*
+  TODO: Step 1 - Prevent your Battlesnake from moving out of bounds
+  let board_width = game_state.board.width in
+  let board_height = game_state.board.height in
+*)
+
+  (*
+  TODO: Step 2 - Prevent your Battlesnake from colliding with itself
+  let my_body = game_state.you.body in
+*)
+
+  (*
+  TODO: Step 3 - Prevent your Battlesnake from colliding with other Battlesnakes
+  opponents = game_state['board']['snakes']
+*)
+
   let safe_moves = 
     list_of_moves available_moves 
       |> List.filter_map (
