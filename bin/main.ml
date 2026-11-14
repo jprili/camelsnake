@@ -4,8 +4,8 @@ let () =
   Dream.run
   @@ Dream.logger
   @@ Dream.router [
-    Dream.get "/" info;
+    Dream.get "/" on_info;
     Dream.post "/start" on_start;
-    (* Dream.post "/move"  on_move;
-    Dream.post "/end"   on_end; *)
+    Dream.post "/move"  on_move;
+    Dream.post "/end"   on_end;
   ]

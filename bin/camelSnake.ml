@@ -54,7 +54,80 @@ type game_state_t = {
   you: snake_t;
 } [@@deriving yojson]
 
-let info _ = 
+type move_response_t = {
+  move: string;
+} [@@deriving yojson]
+
+type direction = 
+  | Up
+  | Down
+  | Left
+  | Right
+;;
+
+type move_t = {
+  mutable up:    bool;
+  mutable down:  bool;
+  mutable left:  bool;
+  mutable right: bool;
+};;
+
+let list_of_moves (m: move_t) = 
+  [
+    ("up",    m.up);
+    ("down",  m.down); 
+    ("left",  m.left); 
+    ("right", m.right)
+  ]
+;;
+
+(* region CALLBACK_HANDLERS *)
+let handle_move game_state =
+  (* up, down, left, right*)
+  let available_moves = { 
+    up    = true; 
+    down  = true; 
+    left  = true; 
+    right = true;
+  } in
+  let (curr_head, prev_head) = 
+    let default = { x = 0; y = 0 }in 
+    match game_state.you.body with
+      a :: b :: _ -> (a, b)
+      | a :: [] -> (a, a)
+      | _ -> (default, default)
+  in
+  (* This means (0, 0) is bottom-left *)
+  if curr_head.y < prev_head.y then
+    available_moves.up    <- false
+  else if curr_head.y > prev_head.y then
+    available_moves.down  <- false
+  else if curr_head.x > prev_head.x then
+    available_moves.left  <- false
+  else if curr_head.x < prev_head.x then
+    available_moves.right <- false;
+
+  let safe_moves = 
+    list_of_moves available_moves 
+      |> List.filter_map (
+        function
+        | (dir, true) -> Some(dir) 
+        | _ -> None 
+      )
+  in
+  let selected_move = 
+    let safe_as_array = Array.of_list safe_moves in
+    Array.get 
+      safe_as_array 
+      (safe_as_array |> Array.length |> Random.int)
+  in
+  ([%yojson_of: move_response_t] { move = selected_move })
+  |> Yojson.Safe.to_string
+;;
+(* endregion *)
+
+(* region CALLBACKS *)
+let on_info _ = 
   {
     apiversion = "1";
     author = "";
@@ -90,4 +163,14 @@ let on_end _ =
   Dream.log "GAME OVER\n"; 
   "ok" |> Dream.json
 ;;
-(* let on_move _ = None;; *)
+
+let on_move request = 
+  let%lwt body = Dream.body request in
+  let game_state = body 
+    |> Yojson.Safe.from_string
+    |> game_state_t_of_yojson
+  in
+  let result = handle_move game_state in
+  Dream.json result
+;;
+(* endregion *)
