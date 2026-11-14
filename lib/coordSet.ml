@@ -1,7 +1,7 @@
 open Types
 
 module Coord = struct
-  type t = coord_t
+  type t = coord
 
   let compare a b =
     match Int.compare a.x b.x with

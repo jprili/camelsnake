@@ -15,7 +15,7 @@ let handle_move { board; you } =
     | 0 -> "up"
     | length -> length |> Random.int |> Array.get safe_moves
   in
-  [%yojson_of: move_response_t] { move = selected_move }
+  [%yojson_of: move_response] { move = selected_move }
   |> Yojson.Safe.to_string
 (* endregion *)
 
@@ -25,7 +25,7 @@ let on_move request =
   Dream.log "%s\n" body;
   body
   |> Yojson.Safe.from_string
-  |> game_state_t_of_yojson
+  |> game_state_of_yojson
   |> handle_move
   |> Dream.json
 
