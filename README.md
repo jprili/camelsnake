@@ -1,19 +1,23 @@
 # camelsnake
-Battlesnake implementation in OCaml
 
-# Setup Environment
+Battlesnake implementation in OCaml.
+
+## Setup Environment
+
 ```bash
 opam switch .
 eval $(opam env)
 ```
 
-# Build
+## Build
+
 ```bash
 opam install --deps-only --yes .
 dune build
 ```
 
-# Run
+## Run
+
 ```bash
 dune exec camelsnake
 ```
