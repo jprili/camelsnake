@@ -8,7 +8,11 @@ let prune_enclosing_moves board hazards head_pairs =
   let w = board.width in
   let h = board.height in
   let areas =
-    List.map (fun (_, coord) -> flood_fill w h hazards coord) head_pairs
+    List.map
+      (fun (_, coord) ->
+        Dream.log "%i %i" coord.x coord.y;
+        flood_fill w h hazards coord)
+      head_pairs
   in
   Dream.log "%s" (List.map string_of_int areas |> String.concat "; ");
   let max_area = List.fold_left max 0 areas in

@@ -5,7 +5,7 @@ open Collision
 let flood_fill width height hazards coord =
   let visited = Array.make_matrix width height false in
   let rec count x y =
-    if is_safe width height hazards coord || visited.(x).(y) then
+    if (not (is_safe width height hazards { x; y })) || visited.(x).(y) then
       0
     else (
       visited.(x).(y) <- true;
