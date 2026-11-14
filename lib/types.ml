@@ -98,10 +98,3 @@ type direction =
   | Down
   | Left
   | Right
-
-type move_t = {
-  mutable up : bool;
-  mutable down : bool;
-  mutable left : bool;
-  mutable right : bool;
-}

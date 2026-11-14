@@ -31,11 +31,11 @@ let move head = function
   | Left -> { x = head.x - 1; y = head.y }
   | Right -> { x = head.x + 1; y = head.y }
 
-let is_safe board hazards snake next_head =
+let is_safe width height hazards snake next_head =
   next_head.x >= 0
-  && next_head.x < board.width
+  && next_head.x < width
   && next_head.y >= 0
-  && next_head.y < board.height
+  && next_head.y < height
   && not (CoordSet.mem next_head hazards)
 
 (** Returns a list of possible body parts for the snake's next stage *)
@@ -46,7 +46,8 @@ let next_body board your_id hazards snake =
   | _, (head :: rest as body) ->
       let next_head = move head in
       let next_body next_head =
-        if not (is_safe board hazards snake next_head) then
+        let { width; height } = board in
+        if not (is_safe width height hazards snake next_head) then
           None
         else if List.mem next_head board.food then
           Some (next_head :: body)
@@ -77,12 +78,12 @@ let get_hazards board your_id =
   in
   CoordSet.union next_bodies board_hazards
 
-let get_safe_moves board your_snake =
+let get_safe_moves board hazards your_snake =
   all_directions
   |> List.filter_map (fun dir ->
       let next_head = move your_snake.head dir in
-      let hazards = get_hazards board your_snake.id in
-      match is_safe board hazards your_snake next_head with
+      let { width; height } = board in
+      match is_safe width height hazards your_snake next_head with
       | true -> Some (direction_name dir)
       | false -> None)
   |> Array.of_list

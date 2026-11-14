@@ -1,12 +1,13 @@
 open Types
+open CoordSet
 
-let flood_fill hazards { x; y } w h =
-  let visited = Array.make_matrix w h false in
+let flood_fill width height hazards coord =
+  let visited = Array.make_matrix width height false in
   let rec count x y =
-    if List.mem (x, y) hazards || visited.(x).(y) then
+    if CoordSet.mem coord hazards || visited.(x).(y) then
       0
     else (
       visited.(x).(y) <- true;
       1 + count (x - 1) y + count (x + 1) y + count x (y - 1) + count x (y + 1))
   in
-  count x y
+  count coord.x coord.y

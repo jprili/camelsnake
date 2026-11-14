@@ -2,10 +2,12 @@ open Ppx_yojson_conv_lib.Yojson_conv.Primitives
 open Yojson.Basic.Util
 open Camelsnake.Types
 open Camelsnake.Collision
+open Camelsnake.Fill
 
 (* region CALLBACK_HANDLERS *)
 let handle_move { board; you } =
-  let safe_moves = get_safe_moves board you in
+  let hazards = get_hazards board you.id in
+  let safe_moves = get_safe_moves board hazards you in
 
   (* TODO: smart moves, for now just move randomly *)
   let selected_move =
