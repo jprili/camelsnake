@@ -1,9 +1,5 @@
 open Types
 
-module type FloodFill = sig
-  val flood_fill : coord_t list -> coord_t -> int -> int -> int
-end
-
 let flood_fill hazards { x; y } w h =
   let visited = Array.make_matrix w h false in
   let rec count x y =

@@ -20,6 +20,7 @@ let handle_move { board; you } =
 (* region CALLBACKS *)
 let on_move request =
   let%lwt body = Dream.body request in
+  Dream.log "%s\n" body;
   body
   |> Yojson.Safe.from_string
   |> game_state_t_of_yojson
