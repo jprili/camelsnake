@@ -84,6 +84,5 @@ let get_safe_moves board hazards your_snake =
       let next_head = move your_snake.head dir in
       let { width; height } = board in
       match is_safe width height hazards your_snake next_head with
-      | true -> Some (direction_name dir)
+      | true -> Some (direction_name dir, next_head)
       | false -> None)
-  |> Array.of_list

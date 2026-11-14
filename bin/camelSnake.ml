@@ -4,10 +4,29 @@ open Camelsnake.Types
 open Camelsnake.Collision
 open Camelsnake.Fill
 
+let prune_enclosing_moves board hazards head_pairs =
+  let w = board.width in
+  let h = board.height in
+  let areas =
+    List.map (fun (_, coord) -> flood_fill w h hazards coord) head_pairs
+  in
+  let max_area = List.fold_left max 0 areas in
+  List.filter_map
+    (fun ((dir_string, _), area) ->
+      if area = max_area then
+        Some dir_string
+      else
+        None)
+    (List.combine head_pairs areas)
+
 (* region CALLBACK_HANDLERS *)
 let handle_move { board; you } =
   let hazards = get_hazards board you.id in
-  let safe_moves = get_safe_moves board hazards you in
+  let safe_moves =
+    get_safe_moves board hazards you
+    |> prune_enclosing_moves board hazards
+    |> Array.of_list
+  in
 
   (* TODO: smart moves, for now just move randomly *)
   let selected_move =
@@ -15,8 +34,7 @@ let handle_move { board; you } =
     | 0 -> "up"
     | length -> length |> Random.int |> Array.get safe_moves
   in
-  [%yojson_of: move_response] { move = selected_move }
-  |> Yojson.Safe.to_string
+  [%yojson_of: move_response] { move = selected_move } |> Yojson.Safe.to_string
 (* endregion *)
 
 (* region CALLBACKS *)
