@@ -1,6 +1,7 @@
 open Ppx_yojson_conv_lib.Yojson_conv.Primitives
 open Yojson.Basic.Util
 open Camelsnake.Types
+open Camelsnake.Collision
 
 let list_of_moves (m : move_t) =
   [ ("up", m.up); ("down", m.down); ("left", m.left); ("right", m.right) ]
