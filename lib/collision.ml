@@ -31,7 +31,7 @@ let move head = function
   | Left -> { x = head.x - 1; y = head.y }
   | Right -> { x = head.x + 1; y = head.y }
 
-let is_safe width height hazards snake next_head =
+let is_safe width height hazards next_head =
   next_head.x >= 0
   && next_head.x < width
   && next_head.y >= 0
@@ -47,7 +47,7 @@ let next_body board your_id hazards snake =
       let next_head = move head in
       let next_body next_head =
         let { width; height } = board in
-        if not (is_safe width height hazards snake next_head) then
+        if not (is_safe width height hazards next_head) then
           None
         else if List.mem next_head board.food then
           Some (next_head :: body)
@@ -83,6 +83,6 @@ let get_safe_moves board hazards your_snake =
   |> List.filter_map (fun dir ->
       let next_head = move your_snake.head dir in
       let { width; height } = board in
-      match is_safe width height hazards your_snake next_head with
+      match is_safe width height hazards next_head with
       | true -> Some (direction_name dir, next_head)
       | false -> None)
