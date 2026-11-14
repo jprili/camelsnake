@@ -1,4 +1,4 @@
 (executable
  (public_name camelsnake)
  (name main)
- (libraries camelsnake))
+ (libraries camelsnake dream))
