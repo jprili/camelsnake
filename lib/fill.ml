@@ -1,10 +1,11 @@
 open Types
 open CoordSet
+open Collision
 
 let flood_fill width height hazards coord =
   let visited = Array.make_matrix width height false in
   let rec count x y =
-    if CoordSet.mem coord hazards || visited.(x).(y) then
+    if is_safe width height hazards coord || visited.(x).(y) then
       0
     else (
       visited.(x).(y) <- true;

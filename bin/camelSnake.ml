@@ -10,6 +10,7 @@ let prune_enclosing_moves board hazards head_pairs =
   let areas =
     List.map (fun (_, coord) -> flood_fill w h hazards coord) head_pairs
   in
+  Dream.log "%s" (List.map string_of_int areas |> String.concat "; ");
   let max_area = List.fold_left max 0 areas in
   List.filter_map
     (fun ((dir_string, _), area) ->
@@ -40,7 +41,7 @@ let handle_move { board; you } =
 (* region CALLBACKS *)
 let on_move request =
   let%lwt body = Dream.body request in
-  Dream.log "%s\n" body;
+  (* Dream.log "%s\n" body; *)
   body
   |> Yojson.Safe.from_string
   |> game_state_of_yojson
