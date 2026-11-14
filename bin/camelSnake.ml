@@ -1,113 +1,20 @@
 open Ppx_yojson_conv_lib.Yojson_conv.Primitives
-
-type info_response = {
-  apiversion : string;
-  author : string;
-  color : string;
-  head : string;
-  tail : string;
-}
-[@@deriving yojson]
-
-type royale_t = { shrinkEveryNTurns : int } [@@deriving yojson]
-(** As specified in the API docs *)
-
-type squad_t = {
-  allowBodyCollisions : bool;
-  sharedElimination : bool;
-  sharedHealth : bool;
-  sharedLength : bool;
-}
-[@@deriving yojson]
-
-type settings_t = {
-  foodSpawnChance : int;
-  minimumFood : int;
-  hazardDamagePerTurn : int option; [@yojson.option]
-  hazardMap : string option; [@yojson.option]
-  hazardMapAuthor : string option; [@yojson.option]
-  royale : royale_t option; [@yojson.option]
-  squad : squad_t option; [@yojson.option]
-}
-[@@deriving yojson]
-
-type ruleset_t = {
-  name : string;
-  settings : settings_t;
-  version : string option; [@yojson.option]
-}
-[@@deriving yojson]
-
-type game_t = {
-  id : string;
-  ruleset : ruleset_t;
-  map : string;
-  timeout : int;
-  source : string option; [@yojson.option]
-}
-[@@deriving yojson]
-
-type coord_t = {
-  x : int;
-  y : int;
-}
-[@@deriving yojson]
-
-type customizations_t = {
-  color : string;
-  head : string;
-  tail : string;
-}
-[@@deriving yojson]
-
-type snake_t = {
-  id : string;
-  name : string;
-  health : int;
-  body : coord_t list;
-  head : coord_t;
-  length : int;
-  latency : string option; [@yojson.option]
-  shout : string option; [@yojson.option]
-  squad : string option; [@yojson.option]
-  customizations : customizations_t option; [@yojson.option]
-}
-[@@deriving yojson]
-
-type board_t = {
-  height : int;
-  width : int;
-  snakes : snake_t list;
-  food : coord_t list;
-  hazards : coord_t list option; [@yojson.option]
-}
-[@@deriving yojson]
-
-type game_state_t = {
-  game : game_t;
-  turn : int;
-  board : board_t;
-  you : snake_t;
-}
-[@@deriving yojson]
-
-type move_response_t = { move : string } [@@deriving yojson]
-
-type direction =
-  | Up
-  | Down
-  | Left
-  | Right
-
-type move_t = {
-  mutable up : bool;
-  mutable down : bool;
-  mutable left : bool;
-  mutable right : bool;
-}
+open Yojson.Basic.Util
+open Camelsnake.Types
 
 let list_of_moves (m : move_t) =
   [ ("up", m.up); ("down", m.down); ("left", m.left); ("right", m.right) ]
+
+(** - All snakes are hazards
+    - Map bounds are hazards
+    - Hazards are hazards *)
+let is_hazard direction { x; y } w h hazards =
+  match direction with
+  | Up when y + 1 = h -> false
+  | Down when y = 0 -> false
+  | Left when x = 0 -> false
+  | Right when x = w -> false
+  | _ -> true
 
 (* region CALLBACK_HANDLERS *)
 let handle_move game_state =
@@ -120,6 +27,17 @@ let handle_move game_state =
     | a :: [] -> (a, a)
     | _ -> (default, default)
   in
+  (*
+  TODO: Step 1 - Prevent your Battlesnake from moving out of bounds
+  let board_width = game_state.board.width in
+  let board_height = game_state.board.height in
+  *)
+
+  (*
+let board_width = game_state.board.width in
+  let board_height = game_state.board.height in
+*)
+
   (* This means (0, 0) is bottom-left *)
   if curr_head.y < prev_head.y then
     available_moves.up <- false
@@ -129,12 +47,6 @@ let handle_move game_state =
     available_moves.left <- false
   else if curr_head.x < prev_head.x then
     available_moves.right <- false;
-
-  (*
-  TODO: Step 1 - Prevent your Battlesnake from moving out of bounds
-  let board_width = game_state.board.width in
-  let board_height = game_state.board.height in
-*)
 
   (*
   TODO: Step 2 - Prevent your Battlesnake from colliding with itself
