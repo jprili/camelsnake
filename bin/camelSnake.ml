@@ -9,14 +9,31 @@ type info_response = {
 } [@@deriving yojson]
 
 (** As specified in the API docs *)
+type royale_t = {
+  shrinkEveryNTurns: int
+} [@@deriving yojson]
+
+type squad_t = {
+  allowBodyCollisions: bool;
+  sharedElimination: bool;
+  sharedHealth: bool;
+  sharedLength: bool;
+} [@@deriving yojson]
+
 type settings_t = {
   foodSpawnChance: int;
-  minimumFood: int
+  minimumFood: int;
+  hazardDamagePerTurn: int option [@yojson.option];
+  hazardMap: string option [@yojson.option];
+  hazardMapAuthor: string option [@yojson.option];
+  royale: royale_t option [@yojson.option];
+  squad: squad_t option [@yojson.option]
 } [@@deriving yojson]
 
 type ruleset_t = {
   name: string;
   settings: settings_t;
+  version: string option [@yojson.option];
 } [@@deriving yojson]
 
 type game_t = {
@@ -24,11 +41,18 @@ type game_t = {
   ruleset: ruleset_t;
   map: string;
   timeout: int;
+  source: string option [@yojson.option];
 } [@@deriving yojson]
 
 type coord_t = {
   x: int;
   y: int;
+} [@@deriving yojson]
+
+type customizations_t = {
+  color: string;
+  head: string;
+  tail: string; 
 } [@@deriving yojson]
 
 type snake_t = {
@@ -38,6 +62,10 @@ type snake_t = {
   body: coord_t list;
   head: coord_t;
   length: int;
+  latency: string option [@yojson.option];
+  shout: string option [@yojson.option];
+  squad: string option [@yojson.option];
+  customizations: customizations_t option [@yojson.option];
 } [@@deriving yojson]
 
 type board_t = {
@@ -45,6 +73,7 @@ type board_t = {
   width:  int;
   snakes: snake_t list;
   food: coord_t list;
+  hazards: (coord_t list) option [@yojson.option];
 } [@@deriving yojson]
 
 type game_state_t = {
@@ -91,7 +120,7 @@ let handle_move game_state =
     right = true;
   } in
   let (curr_head, prev_head) = 
-    let default = { x = 0; y = 0 }in 
+    let default = { x = 0; y = 0 } in 
     match game_state.you.body with
       a :: b :: _ -> (a, b)
       | a :: [] -> (a, a)
@@ -146,7 +175,7 @@ let handle_move game_state =
 let on_info _ = 
   {
     apiversion = "1";
-    author = "";
+    author = "jprili";
     color = "#c0ffee";
     head = "default";
     tail = "default";
@@ -182,6 +211,7 @@ let on_end _ =
 
 let on_move request = 
   let%lwt body = Dream.body request in
+  Dream.log "%s" body;
   let game_state = body 
     |> Yojson.Safe.from_string
     |> game_state_t_of_yojson
