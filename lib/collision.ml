@@ -85,3 +85,4 @@ let get_safe_moves board your_snake =
       match is_safe board hazards your_snake next_head with
       | true -> Some (direction_name dir)
       | false -> None)
+  |> Array.of_list
