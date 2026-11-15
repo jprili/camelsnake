@@ -20,19 +20,47 @@ let direction_name = function
 let handle_move { board; you } =
   let { width; height } = board in
   let hazards = get_hazards board you.id in
-  let safe_moves =
-    get_safe_moves board hazards you
-    |> flood_fill_prune width height hazards
-    |> List.map direction_name
-    |> Array.of_list
+  let territories = define_territories board in
+
+  let safe_moves = get_safe_moves board hazards you in
+  let best_directions =
+    flood_fill_prune width height hazards safe_moves
+  in
+
+  let best_moves =
+    List.filter
+      (fun (direction, _) -> List.mem direction best_directions)
+      safe_moves
+  in
+
+  let territory_preferred_moves =
+    List.filter
+      (fun (_, coord) ->
+        match territories.(coord.x).(coord.y) with
+        | Owned { snake_id; _ } -> snake_id = you.id
+        | Blocked | Unclaimed -> false)
+      best_moves
+  in
+
+  let choices =
+    if territory_preferred_moves = [] then
+      best_moves
+    else
+      territory_preferred_moves
   in
 
   let selected_move =
-    match safe_moves |> Array.length with
-    | 0 -> you |> current_direction |> direction_name
-    | length -> length |> Random.int |> Array.get safe_moves
+    match choices with
+    | [] -> you |> current_direction |> direction_name
+    | moves ->
+        let direction, _ =
+          List.nth moves (Random.int (List.length moves))
+        in
+        direction_name direction
   in
-  [%yojson_of: move_response] { move = selected_move } |> Yojson.Safe.to_string
+
+  [%yojson_of: move_response] { move = selected_move }
+  |> Yojson.Safe.to_string
 (* endregion *)
 
 (* region CALLBACKS *)
