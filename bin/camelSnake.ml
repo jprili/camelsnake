@@ -84,9 +84,16 @@ let handle_move { board; you } =
       else
         [ you |> current_direction ]
   in
-
   let selected_move =
-    moves |> List.length |> Random.int |> List.nth moves |> direction_name
+    let potential_move =
+      match Camelsnake.Simulate.choose_move board you.id 4 with
+      | Some x -> x
+      | None -> you |> current_direction
+    in
+    if List.mem potential_move moves then
+      potential_move |> direction_name
+    else
+      moves |> List.length |> Random.int |> List.nth moves |> direction_name
   in
   [%yojson_of: move_response] { move = selected_move } |> Yojson.Safe.to_string
 (* endregion *)
