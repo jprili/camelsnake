@@ -1,11 +1,12 @@
 open Types
 open Collision
+open Territory
 
-let get_diff = function
-  | Up -> (0, 1)
-  | Down -> (0, -1)
-  | Left -> (-1, 0)
-  | Right -> (1, 0)
+type state_tree = {
+  board : board;
+  score : int;
+  children : state_tree list;
+}
 
 let move_snake snake dir : snake =
   let no_tail = snake.body |> without_tail |> List.rev in
@@ -24,4 +25,39 @@ let rec get_combos num dirs current =
   else
     List.concat_map (get_combos (num - 1) dirs) out
 
-let get_next_state board = None
+let get_next_states board =
+  let { snakes } = board in
+  let num_snakes = List.length snakes in
+  let combos = get_combos num_snakes [ Up; Down; Left; Right ] [] in
+  List.map
+    (fun combo -> { board with snakes = simulate_next snakes combo })
+    combos
+
+let new_state_tree board = { board; score = 0; children = [] }
+
+let eval board you =
+  let score = ref 0 in
+  let territory = define_territories board in
+  for i = 0 to Array.length territory do
+    for j = 0 to Array.length territory.(i) do
+      match territory.(i).(j) with
+      | Owned { snake_id } when snake_id = you.id -> score := !score + 1
+      | _ -> ()
+    done
+  done;
+  !score
+
+let rec build_state_tree you_id depth { board; children } =
+  let score = eval board you_id in
+  if depth <= 0 then
+    { board; score; children = [] }
+  else
+    let next_states = get_next_states board in
+    {
+      board;
+      score;
+      children =
+        List.map
+          (fun b -> build_state_tree you_id (depth - 1) (new_state_tree b))
+          next_states;
+    }
