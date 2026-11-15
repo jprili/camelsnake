@@ -4,17 +4,20 @@ open Camelsnake.Types
 open Camelsnake.Collision
 open Camelsnake.Fill
 
+let get_current_direction you =
+  match you.body with
+  | { x = x1 } :: { x = x2 } :: _ when x1 > x2 -> Right
+  | { x = x1 } :: { x = x2 } :: _ when x1 < x2 -> Left
+  | { y = y1 } :: { y = y2 } :: _ when y1 > y2 -> Up
+  | { y = y1 } :: { y = y2 } :: _ when y1 < y2 -> Down
+  | _ -> failwith "unreachable"
+
 let prune_enclosing_moves board hazards head_pairs =
   let w = board.width in
   let h = board.height in
   let areas =
-    List.map
-      (fun (_, coord) ->
-        Dream.log "%i %i" coord.x coord.y;
-        flood_fill w h hazards coord)
-      head_pairs
+    List.map (fun (_, coord) -> flood_fill w h hazards coord) head_pairs
   in
-  Dream.log "%s" (List.map string_of_int areas |> String.concat "; ");
   let max_area = List.fold_left max 0 areas in
   List.filter_map
     (fun ((dir_string, _), area) ->
@@ -28,7 +31,8 @@ let prune_enclosing_moves board hazards head_pairs =
 let handle_move { board; you } =
   let hazards = get_hazards board you.id in
   let safe_moves =
-    get_safe_moves board hazards you
+    you
+    |> get_safe_moves board hazards
     |> prune_enclosing_moves board hazards
     |> Array.of_list
   in
@@ -36,7 +40,7 @@ let handle_move { board; you } =
   (* TODO: smart moves, for now just move randomly *)
   let selected_move =
     match safe_moves |> Array.length with
-    | 0 -> "up"
+    | 0 -> get_current_direction you |> direction_name
     | length -> length |> Random.int |> Array.get safe_moves
   in
   [%yojson_of: move_response] { move = selected_move } |> Yojson.Safe.to_string
