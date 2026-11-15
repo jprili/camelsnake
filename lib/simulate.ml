@@ -17,5 +17,11 @@ let simulate_next snakes moves =
     (fun (snake, dir) -> move_snake snake dir)
     (List.combine snakes moves)
 
-let rec get_combos num_snakes dirs = None
+let rec get_combos num dirs current =
+  let out = List.map (fun x -> x :: current) dirs in
+  if num <= 1 then
+    out
+  else
+    List.concat_map (get_combos (num - 1) dirs) out
+
 let get_next_state board = None
