@@ -4,12 +4,6 @@ open CoordSet
 let ( >> ) f g x = x |> f |> g
 let all_directions = [ Up; Down; Left; Right ]
 
-let direction_name = function
-  | Up -> "up"
-  | Down -> "down"
-  | Left -> "left"
-  | Right -> "right"
-
 let without_tail body =
   (* returns the body in rev order, but it doesn't matter *)
   match List.rev body with
@@ -84,5 +78,5 @@ let get_safe_moves board hazards your_snake =
       let next_head = move your_snake.head dir in
       let { width; height } = board in
       match is_safe width height hazards next_head with
-      | true -> Some (direction_name dir, next_head)
+      | true -> Some (dir, next_head)
       | false -> None)
