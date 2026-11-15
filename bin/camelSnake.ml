@@ -4,6 +4,7 @@ open Camelsnake.Types
 open Camelsnake.Collision
 open Camelsnake.Fill
 open Camelsnake.Food
+open Camelsnake.Territory
 
 let current_direction you =
   match you.body with
@@ -23,9 +24,7 @@ let handle_move { board; you } =
   let territories = define_territories board in
 
   let safe_moves = get_safe_moves board hazards you in
-  let best_directions =
-    flood_fill_prune width height hazards safe_moves
-  in
+  let best_directions = flood_fill_prune width height hazards safe_moves in
 
   let best_moves =
     List.filter
@@ -53,14 +52,11 @@ let handle_move { board; you } =
     match choices with
     | [] -> you |> current_direction |> direction_name
     | moves ->
-        let direction, _ =
-          List.nth moves (Random.int (List.length moves))
-        in
+        let direction, _ = List.nth moves (Random.int (List.length moves)) in
         direction_name direction
   in
 
-  [%yojson_of: move_response] { move = selected_move }
-  |> Yojson.Safe.to_string
+  [%yojson_of: move_response] { move = selected_move } |> Yojson.Safe.to_string
 (* endregion *)
 
 (* region CALLBACKS *)
