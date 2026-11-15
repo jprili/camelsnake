@@ -33,7 +33,7 @@ let is_safe width height hazards next_head =
   && not (CoordSet.mem next_head hazards)
 
 (** Returns a list of possible body parts for the snake's next stage *)
-let next_body board your_id hazards snake =
+let next_body board your_id your_length hazards snake =
   match (snake.id, snake.body) with
   | id, body when your_id = id -> body |> without_tail |> CoordSet.of_list
   | _, [] -> failwith "snake body should not be empty"
@@ -43,17 +43,24 @@ let next_body board your_id hazards snake =
         let { width; height } = board in
         if not (is_safe width height hazards next_head) then
           None
-        else if List.mem next_head board.food then
-          Some (next_head :: body)
         else
-          Some (next_head :: body |> without_tail)
+          let next_body =
+            if List.mem next_head board.food then
+              body
+            else
+              body |> without_tail
+          in
+          if snake.length < your_length then
+            Some next_body
+          else
+            Some (next_head :: next_body)
       in
       all_directions
       |> List.filter_map (next_head >> next_body)
       |> List.concat
       |> CoordSet.of_list
 
-let get_hazards board your_id =
+let get_hazards board your_id your_length =
   let current_bodies =
     board.snakes
     |> List.concat_map (fun snake -> snake.body)
@@ -67,10 +74,11 @@ let get_hazards board your_id =
   let current_hazards = CoordSet.union current_bodies board_hazards in
   let next_bodies =
     board.snakes
-    |> List.map (next_body board your_id current_hazards)
+    |> List.map (next_body board your_id your_length current_hazards)
     |> CoordSet.union_list
   in
-  CoordSet.union next_bodies board_hazards
+  let next_hazards = CoordSet.union next_bodies board_hazards in
+  (current_hazards, next_hazards)
 
 let get_safe_moves width height hazards head =
   all_directions

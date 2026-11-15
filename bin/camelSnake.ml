@@ -22,7 +22,9 @@ let direction_name = function
 let handle_move { board; you } =
   let { width; height } = board in
 
-  let potential_hazards = get_hazards board you.id in
+  let definite_hazards, potential_hazards =
+    get_hazards board you.id you.length
+  in
   let territories = define_territories board in
 
   let safe_moves =
@@ -41,12 +43,12 @@ let handle_move { board; you } =
             | Owned { snake_id; _ } -> snake_id = you.id
             | _ -> false)
       in
-      let killable_snakes =
+      let other_snake_heads =
         board.snakes
-        |> List.filter (fun snake -> snake.length < you.length)
+        |> List.filter (fun snake -> snake.id <> you.id)
         |> List.map (fun snake -> snake.head)
       in
-      let targets = reachable_food @ killable_snakes in
+      let targets = reachable_food @ other_snake_heads in
       let food_moves =
         you.head
         |> find_food width height targets potential_hazards
@@ -72,18 +74,13 @@ let handle_move { board; you } =
     if List.length best_moves > 0 then
       best_moves
     else
-      let definite_hazards =
-        match board.hazards with
-        | None -> CoordSet.empty
-        | Some h -> CoordSet.of_list h
-      in
-      let definitely_safe_moves =
+      let definite_safe_moves =
         you.head
         |> get_safe_moves width height definite_hazards
         |> List.map (fun (dir, _) -> dir)
       in
-      if List.length definitely_safe_moves > 0 then
-        definitely_safe_moves
+      if List.length definite_safe_moves > 0 then
+        definite_safe_moves
       else
         [ you |> current_direction ]
   in
