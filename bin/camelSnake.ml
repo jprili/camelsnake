@@ -21,6 +21,7 @@ let direction_name = function
 (* region CALLBACK_HANDLERS *)
 let handle_move { board; you } =
   let { width; height } = board in
+
   let potential_hazards = get_hazards board you.id in
   let territories = define_territories board in
 
@@ -40,8 +41,15 @@ let handle_move { board; you } =
             | Owned { snake_id; _ } -> snake_id = you.id
             | _ -> false)
       in
+      let killable_snakes =
+        board.snakes
+        |> List.filter (fun snake -> snake.length < you.length)
+        |> List.map (fun snake -> snake.head)
+      in
+      let targets = reachable_food @ killable_snakes in
       let food_moves =
-        find_food width height reachable_food potential_hazards you.head
+        you.head
+        |> find_food width height targets potential_hazards
         |> List.filter (fun (dir, _) -> List.mem dir safe_moves)
       in
       let closest_food_dist =
@@ -56,27 +64,33 @@ let handle_move { board; you } =
       in
       if List.length optimal_food_moves > 0 then
         optimal_food_moves
-      else if List.length safe_moves > 0 then
-        safe_moves
       else
-        let definite_hazards =
-          match board.hazards with
-          | None -> CoordSet.empty
-          | Some h -> CoordSet.of_list h
-        in
-        let definitely_safe_moves =
-          get_safe_moves width height definite_hazards you.head
-        in
-        definitely_safe_moves |> List.map (fun (dir, _) -> dir)
+        safe_moves
+  in
+
+  let moves =
+    if List.length best_moves > 0 then
+      best_moves
+    else
+      let definite_hazards =
+        match board.hazards with
+        | None -> CoordSet.empty
+        | Some h -> CoordSet.of_list h
+      in
+      let definitely_safe_moves =
+        you.head
+        |> get_safe_moves width height definite_hazards
+        |> List.map (fun (dir, _) -> dir)
+      in
+      if List.length definitely_safe_moves > 0 then
+        definitely_safe_moves
+      else
+        [ you |> current_direction ]
   in
 
   let selected_move =
-    (match best_moves with
-      | [] -> you |> current_direction
-      | moves -> moves |> List.length |> Random.int |> List.nth moves)
-    |> direction_name
+    moves |> List.length |> Random.int |> List.nth moves |> direction_name
   in
-
   [%yojson_of: move_response] { move = selected_move } |> Yojson.Safe.to_string
 (* endregion *)
 
