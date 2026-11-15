@@ -111,7 +111,7 @@ let find_food width height foods hazards head =
       food = food.coord;
     }
   in
-  let rec search current unvisited food res =
+  let rec search current visited unvisited food res =
     let next_food, next_res =
       if CoordSet.mem current.coord food then
         (food |> CoordSet.remove current.coord, get_food_path current :: res)
@@ -123,17 +123,19 @@ let find_food width height foods hazards head =
     else
       match
         neighbors current.coord
+        |> List.filter (fun coord -> not (CoordSet.mem coord visited))
         |> List.map (fun coord ->
             { coord; dist = current.dist + 1; prev = Some current })
         |> List.fold_left NodePQ.update unvisited
         |> NodePQ.pop_min
       with
       | Some (next, next_unvisited) ->
-          search next next_unvisited next_food next_res
+          let next_visited = CoordSet.add next.coord visited in
+          search next next_visited next_unvisited next_food next_res
       | None -> next_res
   in
   let origin = { coord = head; dist = 0; prev = None } in
-  search origin NodePQ.empty (CoordSet.of_list foods) []
+  search origin CoordSet.empty NodePQ.empty (CoordSet.of_list foods) []
   |> List.fold_left
        (fun map path ->
          DirMap.update path.move
