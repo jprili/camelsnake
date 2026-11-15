@@ -1,6 +1,7 @@
 open Ppx_yojson_conv_lib.Yojson_conv.Primitives
 open Yojson.Basic.Util
 open Camelsnake.Types
+open Camelsnake.CoordSet
 open Camelsnake.Collision
 open Camelsnake.Fill
 open Camelsnake.Food
@@ -20,15 +21,15 @@ let direction_name = function
 (* region CALLBACK_HANDLERS *)
 let handle_move { board; you } =
   let { width; height } = board in
-  let hazards = get_hazards board you.id in
+  let potential_hazards = get_hazards board you.id in
   let territories = define_territories board in
 
   let safe_moves =
-    get_safe_moves board hazards you.head
-    |> flood_fill_prune width height hazards
+    get_safe_moves width height potential_hazards you.head
+    |> flood_fill_prune width height potential_hazards
   in
 
-  let food_moves =
+  let best_moves =
     if List.length safe_moves <= 1 then
       safe_moves
     else
@@ -40,7 +41,7 @@ let handle_move { board; you } =
             | _ -> false)
       in
       let food_moves =
-        find_food width height reachable_food hazards you.head
+        find_food width height reachable_food potential_hazards you.head
         |> List.filter (fun (dir, _) -> List.mem dir safe_moves)
       in
       let closest_food_dist =
@@ -55,12 +56,22 @@ let handle_move { board; you } =
       in
       if List.length optimal_food_moves > 0 then
         optimal_food_moves
-      else
+      else if List.length safe_moves > 0 then
         safe_moves
+      else
+        let definite_hazards =
+          match board.hazards with
+          | None -> CoordSet.empty
+          | Some h -> CoordSet.of_list h
+        in
+        let definitely_safe_moves =
+          get_safe_moves width height definite_hazards you.head
+        in
+        definitely_safe_moves |> List.map (fun (dir, _) -> dir)
   in
 
   let selected_move =
-    (match food_moves with
+    (match best_moves with
       | [] -> you |> current_direction
       | moves -> moves |> List.length |> Random.int |> List.nth moves)
     |> direction_name

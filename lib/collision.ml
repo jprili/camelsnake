@@ -72,11 +72,10 @@ let get_hazards board your_id =
   in
   CoordSet.union next_bodies board_hazards
 
-let get_safe_moves board hazards head =
+let get_safe_moves width height hazards head =
   all_directions
   |> List.filter_map (fun dir ->
       let next_head = move head dir in
-      let { width; height } = board in
       match is_safe width height hazards next_head with
       | true -> Some (dir, next_head)
       | false -> None)
