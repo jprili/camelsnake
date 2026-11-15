@@ -23,37 +23,47 @@ let handle_move { board; you } =
   let hazards = get_hazards board you.id in
   let territories = define_territories board in
 
-  let safe_moves = get_safe_moves board hazards you in
-  let best_directions = flood_fill_prune width height hazards safe_moves in
+  let safe_moves =
+    get_safe_moves board hazards you.head
+    |> flood_fill_prune width height hazards
+  in
 
-  let best_moves =
-    List.filter
-      (fun (direction, _) -> List.mem direction best_directions)
+  let food_moves =
+    if List.length safe_moves <= 1 then
       safe_moves
-  in
-
-  let territory_preferred_moves =
-    List.filter
-      (fun (_, coord) ->
-        match territories.(coord.x).(coord.y) with
-        | Owned { snake_id; _ } -> snake_id = you.id
-        | Blocked | Unclaimed -> false)
-      best_moves
-  in
-
-  let choices =
-    if territory_preferred_moves = [] then
-      best_moves
     else
-      territory_preferred_moves
+      let reachable_food =
+        board.food
+        |> List.filter (fun coord ->
+            match territories.(coord.x).(coord.y) with
+            | Owned { snake_id; _ } -> snake_id = you.id
+            | _ -> false)
+      in
+      let food_moves =
+        find_food width height reachable_food hazards you.head
+        |> List.filter (fun (dir, _) -> List.mem dir safe_moves)
+      in
+      let closest_food_dist =
+        food_moves
+        |> List.map (fun (_, path) -> path.dist)
+        |> List.fold_left min max_int
+      in
+      let optimal_food_moves =
+        food_moves
+        |> List.filter (fun (_, path) -> path.dist = closest_food_dist)
+        |> List.map (fun (dir, _) -> dir)
+      in
+      if List.length optimal_food_moves > 0 then
+        optimal_food_moves
+      else
+        safe_moves
   in
 
   let selected_move =
-    match choices with
-    | [] -> you |> current_direction |> direction_name
-    | moves ->
-        let direction, _ = List.nth moves (Random.int (List.length moves)) in
-        direction_name direction
+    (match food_moves with
+      | [] -> you |> current_direction
+      | moves -> moves |> List.length |> Random.int |> List.nth moves)
+    |> direction_name
   in
 
   [%yojson_of: move_response] { move = selected_move } |> Yojson.Safe.to_string

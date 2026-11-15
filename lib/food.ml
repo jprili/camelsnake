@@ -2,6 +2,8 @@ open Types
 open Collision
 open CoordSet
 
+let ( let* ) = Option.bind
+
 type node = {
   coord : coord;
   dist : int;
@@ -20,7 +22,10 @@ end
 module Node = struct
   type t = node
 
-  let compare (a : t) (b : t) = Int.compare a.dist b.dist
+  let compare a b =
+    match Int.compare a.dist b.dist with
+    | 0 -> Coord.compare a.coord b.coord
+    | c -> c
 
   let get_first_move from_coord =
     let rec aux = function
@@ -44,7 +49,7 @@ module NodePQ = struct
     let new_map = CoordMap.add node.coord node map in
     let new_set =
       match CoordMap.find_opt node.coord map with
-      | Some old_node -> NodeSet.remove old_node set
+      | Some old_node -> set |> NodeSet.remove old_node |> NodeSet.add node
       | None -> set |> NodeSet.add node
     in
     (new_map, new_set)
@@ -66,9 +71,8 @@ module NodePQ = struct
     (new_map, new_set)
 
   let pop_min ((_, set) as current) =
-    match NodeSet.min_elt_opt set with
-    | Some min_n -> Some (min_n, remove min_n current)
-    | None -> None
+    let* min_n = NodeSet.min_elt_opt set in
+    Some (min_n, remove min_n current)
 end
 
 let get_direction src des =
@@ -94,11 +98,7 @@ module DirMap = Map.Make (struct
   let compare = compare
 end)
 
-(** Return Map(direction => list of food reachable in that direction).
-
-Each list item has type type {dist: distance to food; food: coord of food}
-*)
-let paths_to_food width height foods hazards head =
+let find_food width height foods hazards head =
   let neighbors coord =
     all_directions
     |> List.map (move coord)
@@ -111,32 +111,40 @@ let paths_to_food width height foods hazards head =
       food = food.coord;
     }
   in
-  let rec search (current : Node.t) unvisited food res =
-    let updated_unvisited =
-      if CoordSet.is_empty food then
-        NodePQ.empty
-      else if CoordSet.mem current.coord food then
-        unvisited
+  let rec search current unvisited food res =
+    let next_food, next_res =
+      if CoordSet.mem current.coord food then
+        (food |> CoordSet.remove current.coord, get_food_path current :: res)
       else
+        (food, res)
+    in
+    if CoordSet.is_empty food then
+      next_res
+    else
+      match
         neighbors current.coord
         |> List.map (fun coord ->
             { coord; dist = current.dist + 1; prev = Some current })
         |> List.fold_left NodePQ.update unvisited
-    in
-    match NodePQ.pop_min updated_unvisited with
-    | Some (next, next_unvisited) ->
-        search next next_unvisited
-          (food |> CoordSet.remove current.coord)
-          (get_food_path current :: res)
-    | None -> res
+        |> NodePQ.pop_min
+      with
+      | Some (next, next_unvisited) ->
+          search next next_unvisited next_food next_res
+      | None -> next_res
   in
   let origin = { coord = head; dist = 0; prev = None } in
-  let food_paths = search origin NodePQ.empty (CoordSet.of_list foods) [] in
-  List.fold_left
-    (fun map path ->
-      DirMap.update path.move
-        (function
-          | None -> Some [ path ]
-          | Some ps -> Some (path :: ps))
-        map)
-    DirMap.empty food_paths
+  search origin NodePQ.empty (CoordSet.of_list foods) []
+  |> List.fold_left
+       (fun map path ->
+         DirMap.update path.move
+           (function
+             | None -> Some path
+             | Some p ->
+                 Some
+                   (if path.dist < p.dist then
+                      path
+                    else
+                      p))
+           map)
+       DirMap.empty
+  |> DirMap.bindings
