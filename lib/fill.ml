@@ -17,11 +17,11 @@ let flood_fill_prune width height hazards safe_moves =
   let areas =
     List.map
       (fun (_, coord) ->
-        Dream.log "%i %i" coord.x coord.y;
+        (* Dream.log "%i %i" coord.x coord.y; *)
         flood_fill coord)
       safe_moves
   in
-  Dream.log "%s" (List.map string_of_int areas |> String.concat "; ");
+  (* Dream.log "%s" (List.map string_of_int areas |> String.concat "; "); *)
   let max_area = List.fold_left max 0 areas in
   List.filter_map
     (fun ((dir, _), area) ->
